@@ -28,11 +28,11 @@ curl -fsSL https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master/i
 ```
 
 이 명령어는:
-- 같은 이름의 파일이 이미 있는데 내용이 다르면, 기존 파일을 백업한 뒤 덮어씁니다
-- 같은 내용이면 건너뜁니다 (그래서 여러 번 실행해도 안전합니다)
-- 그 외 어떤 설정도 건드리지 않습니다
+- 다섯 명령어 파일을 `~/.claude/commands/` 에 설치합니다
+- `~/.claude/settings.json` 에 `/team-dispatch` 가 필요로 하는 Agent Teams 설정을 자동으로 추가합니다 (기존 다른 키는 백업 후 보존)
+- 같은 내용이면 건너뜁니다 (여러 번 실행해도 안전합니다)
 
-Claude Code를 열면 다섯가지 명령어를 바로 쓸 수 있습니다.
+설치 후 Claude Code 세션을 한 번 닫고 다시 열면 다섯 가지 명령어가 바로 작동합니다.
 
 ---
 
