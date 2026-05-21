@@ -15,21 +15,11 @@ curl -fsSL https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master/i
 ```
 
 이 명령어는:
-- 다섯 명령어 파일을 `~/.claude/commands/` 에 바로 다운로드합니다 (중간 clone 폴더가 생기지 않습니다)
 - 같은 이름의 파일이 이미 있는데 내용이 다르면, 기존 파일을 백업한 뒤 덮어씁니다
 - 같은 내용이면 건너뜁니다 (그래서 여러 번 실행해도 안전합니다)
 - 그 외 어떤 설정도 건드리지 않습니다
 
-Claude Code 를 다음에 열면 다섯 명령어를 바로 쓸 수 있습니다.
-
-> **설치 전에 스크립트를 살펴보고 싶다면**, 클론한 뒤 검토하고 실행할 수도 있습니다:
-> ```bash
-> git clone https://github.com/FullTimeScam/fts-omc-light.git
-> cd fts-omc-light
-> less install.sh   # 내용 확인
-> ./install.sh
-> ```
-> 인터넷에서 받은 스크립트를 바로 실행하는 게 꺼려진다면 이 방법을 권장합니다.
+Claude Code를 열면 다섯가지 명령어를 바로 쓸 수 있습니다.
 
 ---
 
