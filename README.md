@@ -23,8 +23,6 @@ AI 에게 뭔가를 부탁했을 때 이런 경험, 익숙하지 않으세요?
 
 ## 설치
 
-한 줄이면 끝납니다. 아무 폴더에서 실행해도 됩니다:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master/install.sh | bash
 ```
