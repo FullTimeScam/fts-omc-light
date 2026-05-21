@@ -74,7 +74,7 @@ AI:
 
 ---
 
-## Agent Teams 설정 (`/team-dispatch` 가 필요로 함)
+## Agent Teams 설정 (자동설치 되지 않을 시)
 
 `/team-dispatch` 는 Claude Code 의 "Agent Teams" 라는 실험 기능을 씁니다. 설치 스크립트가 `~/.claude/settings.json` 에 다음 두 키를 **자동으로 추가**합니다 (기존 다른 키는 보존, 백업도 함께 생성):
 
