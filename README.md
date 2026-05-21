@@ -74,22 +74,26 @@ AI:
 
 ---
 
-## 한 가지 수동 설정 (`/team-dispatch` 사용 시)
+## Agent Teams 설정 (`/team-dispatch` 가 필요로 함)
 
-`/team-dispatch` 는 Claude Code 의 "Agent Teams" 라는 실험 기능을 씁니다. 이걸 켜려면 `~/.claude/settings.json` 파일을 열어서 다음 두 항목을 추가해야 합니다.
+`/team-dispatch` 는 Claude Code 의 "Agent Teams" 라는 실험 기능을 씁니다. 설치 스크립트가 `~/.claude/settings.json` 에 다음 두 키를 **자동으로 추가**합니다 (기존 다른 키는 보존, 백업도 함께 생성):
 
 ```json
 {
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
   "teammateMode": "in-process"
 }
 ```
 
-추가 후 Claude Code 세션을 닫고 다시 여세요.
+설치 후 Claude Code 세션을 한 번 닫고 다시 열면 적용됩니다.
 
-이 설정을 안 해도 다른 네 명령어는 정상 동작합니다. `/team-dispatch` 도 폴백 모드로는 돌아가지만, 팀원 AI 들이 서로 메시지를 주고받지 못하고 각자 작업만 하게 됩니다.
+> **자동 설정이 실패하면** (예: `settings.json` 이 깨졌거나, `python3` 가 없거나, 권한이 부족하거나) 설치 스크립트가 실패 사유를 알려주고 위 두 키를 직접 추가하라는 안내를 띄웁니다. 그대로 복사해 settings.json 에 넣으면 됩니다. 다른 네 명령어는 이 설정 없이도 정상 동작합니다.
+
+> **자동 수정을 원치 않으면** 설치 명령 앞에 환경변수를 붙이세요:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master/install.sh | FTS_NO_AGENT_TEAMS_CONFIG=1 bash
+> ```
+> 이 경우 settings.json 은 건드리지 않고, 수동 안내만 출력합니다.
 
 ---
 

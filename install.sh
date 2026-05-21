@@ -10,13 +10,21 @@
 #        ./install.sh
 #      Uses the local commands/ directory.
 #
-# Both modes write to ~/.claude/commands/ (or $CLAUDE_CONFIG_DIR/commands/).
+# Writes:
+#   - ~/.claude/commands/{deep-interview,plan-consensus,ralph,team-dispatch,autoresearch-loop}.md
+#   - ~/.claude/commands/_shared/preamble.md
+#   - ~/.claude/settings.json (only env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + teammateMode keys;
+#     other keys preserved; backup created before any modification)
+#
+# Honors $CLAUDE_CONFIG_DIR if set (replaces $HOME/.claude).
 # Idempotent: skips identical files, backs up changed ones with timestamp suffix.
-# Touches nothing else (no settings.json modification, no other directories).
+# To skip the Agent Teams auto-config step, set FTS_NO_AGENT_TEAMS_CONFIG=1.
 
 set -euo pipefail
 
-TARGET_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/commands"
+CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+TARGET_DIR="$CONFIG_DIR/commands"
+SETTINGS_FILE="$CONFIG_DIR/settings.json"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 REPO_RAW="${FTS_OMC_LIGHT_REPO:-https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master}"
 
@@ -28,7 +36,9 @@ COMMANDS=(
   "autoresearch-loop.md"
 )
 
+# ─────────────────────────────────────────────────────────────
 # Mode detection: local if BASH_SOURCE points to a real file next to a commands/ dir
+# ─────────────────────────────────────────────────────────────
 MODE="remote"
 SCRIPT_DIR=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
@@ -55,6 +65,9 @@ echo ""
 
 mkdir -p "$TARGET_DIR" "$TARGET_DIR/_shared"
 
+# ─────────────────────────────────────────────────────────────
+# File install helpers
+# ─────────────────────────────────────────────────────────────
 fetch_to() {
   local relpath="$1"
   local outpath="$2"
@@ -111,32 +124,162 @@ install_one \
   "$TARGET_DIR/_shared/preamble.md" \
   "_shared/preamble.md"
 
+# ─────────────────────────────────────────────────────────────
+# Agent Teams auto-config (settings.json)
+# Adds env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS="1" and teammateMode="in-process"
+# while preserving every other key. Backs up before writing.
+#
+# Failure modes (all fall through to manual instruction at end):
+#   - FTS_NO_AGENT_TEAMS_CONFIG=1 set → user opted out
+#   - python3 not available
+#   - existing settings.json has invalid JSON
+#   - write permission denied
+# ─────────────────────────────────────────────────────────────
+
+AGENT_TEAMS_STATUS="UNKNOWN"
+AGENT_TEAMS_DETAIL=""
+
+configure_agent_teams() {
+  if [ "${FTS_NO_AGENT_TEAMS_CONFIG:-0}" = "1" ]; then
+    AGENT_TEAMS_STATUS="OPTED_OUT"
+    AGENT_TEAMS_DETAIL="FTS_NO_AGENT_TEAMS_CONFIG=1"
+    return
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    AGENT_TEAMS_STATUS="NO_PYTHON"
+    AGENT_TEAMS_DETAIL="python3 명령을 찾을 수 없음"
+    return
+  fi
+
+  mkdir -p "$CONFIG_DIR"
+
+  local result
+  result=$(python3 - "$SETTINGS_FILE" "$TIMESTAMP" <<'PYEOF'
+import json
+import os
+import shutil
+import sys
+
+path, ts = sys.argv[1], sys.argv[2]
+
+if os.path.exists(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            print("INVALID_JSON")
+            sys.exit(0)
+    except (json.JSONDecodeError, OSError):
+        print("INVALID_JSON")
+        sys.exit(0)
+else:
+    data = {}
+
+env = data.get("env") if isinstance(data.get("env"), dict) else {}
+already_set = (
+    env.get("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS") == "1"
+    and data.get("teammateMode") == "in-process"
+)
+
+if already_set:
+    print("ALREADY_SET")
+    sys.exit(0)
+
+if os.path.exists(path):
+    try:
+        shutil.copy2(path, f"{path}.bak-{ts}")
+    except OSError as e:
+        print(f"BACKUP_FAILED:{e}")
+        sys.exit(0)
+
+if not isinstance(data.get("env"), dict):
+    data["env"] = {}
+data["env"]["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1"
+data["teammateMode"] = "in-process"
+
+try:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+except OSError as e:
+    print(f"WRITE_FAILED:{e}")
+    sys.exit(0)
+
+print("UPDATED")
+PYEOF
+) || result="EXEC_FAILED"
+
+  case "$result" in
+    ALREADY_SET)
+      AGENT_TEAMS_STATUS="ALREADY_SET"
+      ;;
+    UPDATED)
+      AGENT_TEAMS_STATUS="UPDATED"
+      ;;
+    INVALID_JSON)
+      AGENT_TEAMS_STATUS="INVALID_JSON"
+      AGENT_TEAMS_DETAIL="$SETTINGS_FILE 가 유효한 JSON 이 아님"
+      ;;
+    BACKUP_FAILED:*|WRITE_FAILED:*|EXEC_FAILED)
+      AGENT_TEAMS_STATUS="WRITE_ERROR"
+      AGENT_TEAMS_DETAIL="${result#*:}"
+      ;;
+    *)
+      AGENT_TEAMS_STATUS="UNKNOWN"
+      AGENT_TEAMS_DETAIL="$result"
+      ;;
+  esac
+}
+
+echo ""
+echo "⚙ Agent Teams 자동 설정 (settings.json)..."
+configure_agent_teams
+
+case "$AGENT_TEAMS_STATUS" in
+  ALREADY_SET)
+    echo "  = 이미 활성화됨 (env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 + teammateMode=in-process)"
+    ;;
+  UPDATED)
+    echo "  + env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = \"1\""
+    echo "  + teammateMode = \"in-process\""
+    if [ -f "$SETTINGS_FILE.bak-$TIMESTAMP" ]; then
+      echo "  ✓ $SETTINGS_FILE 갱신 (백업: settings.json.bak-$TIMESTAMP)"
+    else
+      echo "  ✓ $SETTINGS_FILE 신규 생성"
+    fi
+    echo "  ! 변경 사항 반영을 위해 Claude Code 세션 재시작 필요"
+    ;;
+  *)
+    echo "  ✗ 자동 설정 실패 ($AGENT_TEAMS_STATUS${AGENT_TEAMS_DETAIL:+: $AGENT_TEAMS_DETAIL})"
+    echo "    /team-dispatch 를 사용하려면 $SETTINGS_FILE 에 다음 두 키를 수동으로 추가하세요:"
+    echo ""
+    echo "      \"env\": { \"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS\": \"1\" },"
+    echo "      \"teammateMode\": \"in-process\""
+    echo ""
+    echo "    추가 후 Claude Code 세션을 재시작하세요."
+    echo "    (다른 네 명령어는 이 설정 없이도 정상 동작합니다.)"
+    ;;
+esac
+
 cat <<'EOF'
 
-✓ 파일 설치 완료.
+✓ 설치 완료.
 
 ────────────────────────────────────────────────────────
-다음 수동 단계가 필요할 수 있습니다:
+권장 / 참고 사항
 ────────────────────────────────────────────────────────
 
-[필수 — /team-dispatch 사용 시]
-  ~/.claude/settings.json 에 다음 추가:
-
-    "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
-    "teammateMode": "in-process"
-
-  추가 후 Claude Code 세션 재시작.
-
-[권장 — 모호성 채점·합의 루프 정확도]
+[권장] 모호성 채점·합의 루프 정확도
   Opus 모델 사용 (Sonnet 도 동작하지만 정확도 ↓).
 
-[참고 — Plan Mode 활성 시]
+[참고] Plan Mode 활성 시
   Plan Mode 가 활성이면 .omc/specs/ 와 .omc/state/ 쓰기가
   차단되고 spec 이 ~/.claude/plans/ 의 auto-slug 파일로
   리다이렉트됩니다. 정상 동작입니다.
 
 ────────────────────────────────────────────────────────
-사용 예:
+사용 예
 ────────────────────────────────────────────────────────
 
   /deep-interview "vague idea"
