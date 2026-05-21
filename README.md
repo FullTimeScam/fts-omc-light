@@ -3,6 +3,7 @@
 Claude Code 에게 "대충 만들어줘" 같은 막연한 부탁을 던져도, 알아서 끝까지 캐묻고 검증하고 완성하도록 만드는 다섯 개의 슬래시 명령어 모음입니다.
 
 설치하면 Claude Code 안에서 `/deep-interview`, `/plan-consensus`, `/ralph`, `/team-dispatch`, `/autoresearch-loop` 다섯 가지를 바로 쓸 수 있습니다.
+
 ---
 
 ## 왜 만들었나
