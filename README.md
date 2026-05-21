@@ -159,11 +159,15 @@ sed -i.bak 's/Default `0\.05`/Default `0.20`/' ~/.claude/commands/deep-interview
 
 ## 제거
 
+`~/.claude/commands/` 에 설치된 다섯 파일을 안전하게 옮겨두려면:
+
 ```bash
-./uninstall.sh
+curl -fsSL https://raw.githubusercontent.com/FullTimeScam/fts-omc-light/master/uninstall.sh | bash
 ```
 
-설치된 파일들이 `.removed-<날짜시간>` 접미사로 안전하게 옮겨집니다. 잘못 지웠다면 접미사만 떼어내면 복원됩니다. settings.json 의 Agent Teams 설정은 자동으로 건드리지 않으니, 필요하면 손으로 지우세요.
+또는 클론한 적이 있다면 `./uninstall.sh` 로도 됩니다.
+
+설치된 파일들이 `.removed-<날짜시간>` 접미사로 옮겨집니다. 잘못 지웠다면 접미사만 떼어내면 복원됩니다. settings.json 의 Agent Teams 설정은 자동으로 건드리지 않으니, 필요하면 손으로 지우세요.
 
 ---
 
